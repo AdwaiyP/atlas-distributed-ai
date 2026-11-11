@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "127.0.0.1:5435:5432"
+    environment:
+      POSTGRES_USER: atlas
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: atlas
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atlas -d atlas"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "127.0.0.1:8004:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://atlas:${POSTGRES_PASSWORD}@postgres:5432/atlas
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    environment:
+      DATABASE_URL: postgres://atlas:${POSTGRES_PASSWORD}@postgres:5432/atlas
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: ["python", "-m", "alembic", "-c", "backend/alembic.ini", "upgrade", "head"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://atlas:${POSTGRES_PASSWORD}@postgres:5432/atlas
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  postgres_data:

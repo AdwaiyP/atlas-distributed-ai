@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-worker
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-worker
+  template:
+    metadata:
+      labels:
+        app: atlas-worker
+    spec:
+      containers:
+        - name: worker
+          image: atlas-worker:latest
+          imagePullPolicy: Never
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: atlas-db-secret
+                  key: WORKER_DATABASE_URL
