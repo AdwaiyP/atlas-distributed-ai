@@ -1,0 +1,21 @@
+name: Go worker tests
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  go-worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: worker/go.mod
+          cache-dependency-path: worker/go.sum
+      - name: Unit tests
+        working-directory: worker
+        run: go test -race ./...
+      - name: Vet
+        working-directory: worker
+        run: go vet ./...
